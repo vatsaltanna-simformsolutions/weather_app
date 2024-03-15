@@ -2,6 +2,8 @@
 
 A Flutter project for the Weather App.
 
+[![Codacy Badge](https://app.codacy.com/project/badge/Grade/c542227c93544dcc8d695a7dcf101c4e)](https://app.codacy.com/gh/vatsaltanna-simformsolutions/weather_app/dashboard?utm_source=gh&utm_medium=referral&utm_content=&utm_campaign=Badge_grade)
+
 ## Getting Started
 
 This project is a starting point for a Flutter application.
