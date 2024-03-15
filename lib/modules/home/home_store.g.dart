@@ -72,22 +72,6 @@ mixin _$HomeStore on _HomeStore, Store {
     });
   }
 
-  late final _$locationErrorAtom =
-      Atom(name: '_HomeStore.locationError', context: context);
-
-  @override
-  String? get locationError {
-    _$locationErrorAtom.reportRead();
-    return super.locationError;
-  }
-
-  @override
-  set locationError(String? value) {
-    _$locationErrorAtom.reportWrite(value, super.locationError, () {
-      super.locationError = value;
-    });
-  }
-
   late final _$currentPositionAtom =
       Atom(name: '_HomeStore.currentPosition', context: context);
 
@@ -111,7 +95,6 @@ weather: ${weather},
 hourlyWeather: ${hourlyWeather},
 locations: ${locations},
 daysForecast: ${daysForecast},
-locationError: ${locationError},
 currentPosition: ${currentPosition}
     ''';
   }

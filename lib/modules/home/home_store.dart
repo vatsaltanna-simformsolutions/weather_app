@@ -1,13 +1,12 @@
 import 'dart:async';
-import 'dart:convert';
 import 'dart:math';
 
 import 'package:flutter/material.dart';
 import 'package:mobx/mobx.dart';
 import 'package:weather_app/apibase/interfaces/repository.dart';
+import 'package:weather_app/apibase/network_state_store.dart';
 import 'package:weather_app/apibase/repository.dart';
-import 'package:weather_app/app.dart';
-import 'package:weather_app/main_dev.dart';
+import 'package:weather_app/main.dart';
 import 'package:weather_app/model/coord.dart';
 import 'package:weather_app/model/current_weather.dart';
 import 'package:weather_app/model/days_forecast.dart';
@@ -17,13 +16,10 @@ import 'package:weather_app/services/data_store/data_store_base.dart';
 import 'package:weather_app/services/data_store/sp_data_store.dart';
 import 'package:weather_app/services/geolocator/geo_locator.dart';
 import 'package:weather_app/services/geolocator/geo_locator_base.dart';
-import 'package:weather_app/services/shared_prefs.dart';
-import 'package:weather_app/services/shared_prefs_keys.dart';
 import 'package:weather_app/utils/extensions.dart';
 import 'package:weather_app/values/constants.dart';
 import 'package:weather_app/values/enumeration.dart';
-
-import '../../apibase/network_state_store.dart';
+import 'package:weather_app/values/strings.dart';
 
 part 'home_store.g.dart';
 
@@ -57,34 +53,36 @@ abstract class _HomeStore extends NetworkStateStore with Store {
   DaysForecast? daysForecast;
 
   @observable
-  String? locationError;
-
-  @observable
   Coord currentPosition = Constants.defaultCoords;
 
   Future<void> init() async {
-    Coord? pos;
+    final lat = await _dataStore.retrieveStoredLat();
+    final lon = await _dataStore.retrieveStoredLong();
 
-    try {
-      final lat = await _dataStore.retrieveStoredLat();
-      final lon = await _dataStore.retrieveStoredLong();
-
-      if (lat != null && lon != null) {
-        pos = Coord(
-          lon: lon,
-          lat: lat,
-        );
-      } else {
-        pos = (await _locator.getPosition())?.coord;
-      }
-    } catch (e) {
-      locationError = '$e';
+    if (lat != null && lon != null) {
+      _setCoords(Coord(
+        lon: lon,
+        lat: lat,
+      ));
     }
 
-    _setCoords(Coord(
-      lon: pos?.lon ?? currentPosition.lon,
-      lat: pos?.lat ?? currentPosition.lat,
-    ));
+    _getPosition().then((value) {
+      if ((value.lat != lat || value.lon != lon)) {
+        _setCoords(value);
+      }
+    });
+  }
+
+  Future<Coord> _getPosition() async {
+    try {
+      return (await _locator.getPosition())?.coord ?? Constants.defaultCoords;
+    } catch (e) {
+      ScaffoldMessenger.of(navigator.context).showSnackBar(const SnackBar(
+        content: Text(AppStrings.unableToGetLocation),
+        duration: Duration(seconds: 6),
+      ));
+      return Constants.defaultCoords;
+    }
   }
 
   void setLocation(Result result) {
@@ -110,27 +108,39 @@ abstract class _HomeStore extends NetworkStateStore with Store {
           currentLat: currentPosition.lat ?? Constants.defaultCoords.lat!,
           currentLong: currentPosition.lon ?? Constants.defaultCoords.lon!,
           apiCall: () async {
-            weather = await _repository.getCurrentWeather(
-              currentPosition.lat ?? Constants.defaultCoords.lat!,
-              currentPosition.lon ?? Constants.defaultCoords.lon!,
-            );
+            try {
+              weather = await _repository.getCurrentWeather(
+                currentPosition.lat ?? Constants.defaultCoords.lat!,
+                currentPosition.lon ?? Constants.defaultCoords.lon!,
+              );
 
-            state = NetworkState.success;
+              currentPosition = weather?.coord ?? currentPosition;
 
-            SharedPrefs.setSharedProperty(
-                keyEnum: SharedPrefsKeys.getCurrentWeather,
-                value: jsonEncode(weather?.toJson()));
+              _setMeta();
+
+              state = NetworkState.success;
+
+              _dataStore.setCurrentWeather(weather);
+            } catch (e) {
+              state = NetworkState.error;
+              serverError = '$e';
+            }
           },
           localCall: () {
-            final data = SharedPrefs.getSharedProperty(
-                keyEnum: SharedPrefsKeys.getCurrentWeather);
-
-            weather = CurrentWeather.fromJson(jsonDecode(data));
+            weather = _dataStore.getCurrentWeather(currentPosition);
           });
     } catch (e) {
       state = NetworkState.error;
       serverError = e.toString();
     }
+  }
+
+  Future<void> _setMeta() async {
+    await _dataStore.storeDataTime(DateTime.now());
+    await _dataStore
+        .storeLat(currentPosition.lat ?? Constants.defaultCoords.lat!);
+    await _dataStore
+        .storeLong(currentPosition.lon ?? Constants.defaultCoords.lon!);
   }
 
   Future<void>? getDaysForecast() async {
@@ -139,17 +149,22 @@ abstract class _HomeStore extends NetworkStateStore with Store {
           currentLat: currentPosition.lat ?? Constants.defaultCoords.lat!,
           currentLong: currentPosition.lon ?? Constants.defaultCoords.lon!,
           apiCall: () async {
-            daysForecast = await _repository.getDaysForecast(
-              currentPosition.lat ?? Constants.defaultCoords.lat!,
-              currentPosition.lon ?? Constants.defaultCoords.lon!,
-              7,
-            );
-            state = NetworkState.success;
-
             try {
-              _dataStore.setDaysForecast(daysForecast);
+              daysForecast = await _repository.getDaysForecast(
+                currentPosition.lat ?? Constants.defaultCoords.lat!,
+                currentPosition.lon ?? Constants.defaultCoords.lon!,
+                15,
+              );
+
+              state = NetworkState.success;
+
+              try {
+                _dataStore.setDaysForecast(daysForecast);
+              } catch (e) {
+                debugPrint('$e');
+              }
             } catch (e) {
-              debugPrint('$e');
+              state = NetworkState.error;
             }
           },
           localCall: () {
@@ -159,7 +174,6 @@ abstract class _HomeStore extends NetworkStateStore with Store {
           });
     } catch (e) {
       state = NetworkState.error;
-      print(e);
       serverError = e.toString();
     }
   }
@@ -167,18 +181,14 @@ abstract class _HomeStore extends NetworkStateStore with Store {
   Future<void>? getCityNames(String cityName) async {
     try {
       locations = await _repository.getCityNames(name: cityName);
-    } catch (e) {
-      print(e);
-    }
+    } catch (e) {}
   }
 
   void dispose() {
     getIt<SettingsStore>().removeCallback(_refresh);
   }
 
-  void _refresh() {
-    print(DateTime.now());
-  }
+  void _refresh() {}
 
   Future<void> _checkAndPerformCallback({
     required Function() apiCall,
@@ -190,19 +200,14 @@ abstract class _HomeStore extends NetworkStateStore with Store {
     final lastStoredLat = await _dataStore.retrieveStoredLat();
     final lastStoredLong = await _dataStore.retrieveStoredLong();
     final currentTime = DateTime.now();
-    double? dist;
-    if (lastStoredLat != null && lastStoredLong != null) {
-      dist = _calculateDistance(currentLat, currentLong,
-          lastStoredLat ?? currentLat, lastStoredLong ?? currentLong);
-    }
+
+    final dist = _calculateDistance(currentLat, currentLong,
+        lastStoredLat ?? currentLat, lastStoredLong ?? currentLong);
 
     if (lastStoredTime == null ||
         currentTime.difference(lastStoredTime).inMinutes >=
             getIt<SettingsStore>().frequency.minutes ||
-        (dist != null && dist > 10)) {
-      await _dataStore.storeDataTime(currentTime);
-      await _dataStore.storeLat(currentLat);
-      await _dataStore.storeLong(currentLong);
+        dist >= 10) {
       apiCall();
     } else {
       localCall();

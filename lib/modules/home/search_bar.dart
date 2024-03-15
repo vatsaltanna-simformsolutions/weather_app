@@ -1,8 +1,6 @@
-import 'dart:math';
-
 import 'package:flutter/material.dart';
 import 'package:rxdart/rxdart.dart';
-import 'package:weather_app/main_dev.dart';
+import 'package:weather_app/main.dart';
 import 'package:weather_app/model/locations.dart';
 import 'package:weather_app/modules/home/home_store.dart';
 import 'package:weather_app/utils/extensions.dart';
@@ -15,10 +13,12 @@ class SearchBarWithSuggestions extends StatefulWidget {
     required this.itemClick,
     this.debounceTime = 600,
     required this.hint,
+    this.focusNode,
   });
 
   final void Function(Result) itemClick;
   final String hint;
+  final FocusNode? focusNode;
 
   final int debounceTime;
 
@@ -42,44 +42,58 @@ class SearchBarWithSuggestionsState extends State<SearchBarWithSuggestions> {
   final TextEditingController _searchController = TextEditingController();
   final LayerLink _layerLink = LayerLink();
   bool isSearched = false;
-  FocusNode focusNode = FocusNode();
 
   @override
   Widget build(BuildContext context) {
     return CompositedTransformTarget(
       link: _layerLink,
-      child: SearchBar(
-        elevation: MaterialStateProperty.all(0),
-        controller: _searchController,
-        textStyle: MaterialStateProperty.all(
-          lowerDarkText.copyWith(
-            fontSize: 20,
+      child: Theme(
+        data: Theme.of(context).copyWith(
+          textSelectionTheme: TextSelectionThemeData(
+            cursorColor: lowerDarkText.color,
           ),
         ),
-        leading: Icon(
-          Icons.search,
-          color: lowerDarkText.color,
-        ),
-        trailing: [
-          GestureDetector(
-            onTap: () {
-              context.pushNamed(AppRoutes.txtSettings);
-            },
-            child: Icon(
-              Icons.settings,
-              color: AppColors.lowerDarkText.color,
-              size: 34,
+        child: SearchBar(
+          focusNode: widget.focusNode,
+          elevation: MaterialStateProperty.all(0),
+          controller: _searchController,
+          textStyle: MaterialStateProperty.all(
+            lowerDarkText.copyWith(
+              fontSize: 20,
             ),
-          )
-        ],
-        backgroundColor: MaterialStateProperty.all(searchBarColor),
-        hintText: widget.hint,
-        hintStyle: MaterialStateProperty.all(
-          lowerDarkText.copyWith(
-            fontSize: 20,
           ),
+          leading: Padding(
+            padding: const EdgeInsets.only(left: 10),
+            child: Icon(
+              Icons.search,
+              color: lowerDarkText.color,
+            ),
+          ),
+          trailing: [
+            InkWell(
+              onTap: () {
+                widget.focusNode?.unfocus();
+                context.pushNamed(AppRoutes.txtSettings);
+              },
+              child: Padding(
+                padding: const EdgeInsets.only(right: 10),
+                child: Icon(
+                  Icons.settings,
+                  color: AppColors.lowerDarkText.color,
+                  size: 26,
+                ),
+              ),
+            )
+          ],
+          backgroundColor: MaterialStateProperty.all(searchBarColor),
+          hintText: widget.hint,
+          hintStyle: MaterialStateProperty.all(
+            lowerDarkText.copyWith(
+              fontSize: 20,
+            ),
+          ),
+          onChanged: textChanged,
         ),
-        onChanged: textChanged,
       ),
     );
   }
@@ -94,7 +108,6 @@ class SearchBarWithSuggestionsState extends State<SearchBarWithSuggestions> {
     }
 
     isSearched = false;
-    // if (subscriptionResponse.predictions!.isNotEmpty) {
 
     final homeStore = getIt<HomeStore>();
     await homeStore.getCityNames(text);
@@ -102,7 +115,6 @@ class SearchBarWithSuggestionsState extends State<SearchBarWithSuggestions> {
     alPredictions
       ..clear()
       ..addAll((list ?? []));
-    // }
 
     _overlayEntry = null;
     _overlayEntry = _createOverlayEntry();
@@ -118,11 +130,20 @@ class SearchBarWithSuggestionsState extends State<SearchBarWithSuggestions> {
         .distinct()
         .debounceTime(Duration(milliseconds: widget.debounceTime))
         .listen(textChanged);
-    focusNode.addListener(() {
-      if (!focusNode.hasFocus) {
-        removeOverlay();
-      }
-    });
+    widget.focusNode?.addListener(_showOverlay);
+  }
+
+  @override
+  void dispose() {
+    widget.focusNode?.removeListener(_showOverlay);
+
+    super.dispose();
+  }
+
+  void _showOverlay() {
+    if (!(widget.focusNode?.hasFocus ?? false)) {
+      removeOverlay();
+    }
   }
 
   Future<void> textChanged(String text) async {
@@ -157,7 +178,7 @@ class SearchBarWithSuggestionsState extends State<SearchBarWithSuggestions> {
                   padding: EdgeInsets.zero,
                   shrinkWrap: true,
                   itemCount: alPredictions.length,
-                  physics: BouncingScrollPhysics(),
+                  physics: const BouncingScrollPhysics(),
                   itemBuilder: (BuildContext context, int index) {
                     return InkWell(
                       onTap: () {

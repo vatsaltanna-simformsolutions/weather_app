@@ -1,13 +1,13 @@
-import 'dart:convert';
-
 import 'package:json_annotation/json_annotation.dart';
+import 'package:weather_app/model/clouds.dart';
+import 'package:weather_app/model/sys.dart';
+import 'package:weather_app/model/weather.dart';
+import 'package:weather_app/model/weather_data.dart';
+import 'package:weather_app/model/wind.dart';
+
 import 'coord.dart';
+
 part 'current_weather.g.dart';
-
-CurrentWeather currentWeatherFromJson(String str) =>
-    CurrentWeather.fromJson(json.decode(str));
-
-String currentWeatherToJson(CurrentWeather data) => json.encode(data.toJson());
 
 @JsonSerializable()
 class CurrentWeather {
@@ -18,7 +18,7 @@ class CurrentWeather {
   @JsonKey(name: "base")
   final String? base;
   @JsonKey(name: "main")
-  final Main? main;
+  final WeatherData? weatherData;
   @JsonKey(name: "visibility")
   final int? visibility;
   @JsonKey(name: "wind")
@@ -42,7 +42,7 @@ class CurrentWeather {
     this.coord,
     this.weather,
     this.base,
-    this.main,
+    this.weatherData,
     this.visibility,
     this.wind,
     this.clouds,
@@ -58,7 +58,7 @@ class CurrentWeather {
     Coord? coord,
     List<Weather>? weather,
     String? base,
-    Main? main,
+    WeatherData? main,
     int? visibility,
     Wind? wind,
     Clouds? clouds,
@@ -73,7 +73,7 @@ class CurrentWeather {
         coord: coord ?? this.coord,
         weather: weather ?? this.weather,
         base: base ?? this.base,
-        main: main ?? this.main,
+        weatherData: main ?? weatherData,
         visibility: visibility ?? this.visibility,
         wind: wind ?? this.wind,
         clouds: clouds ?? this.clouds,
@@ -89,175 +89,4 @@ class CurrentWeather {
       _$CurrentWeatherFromJson(json);
 
   Map<String, dynamic> toJson() => _$CurrentWeatherToJson(this);
-}
-
-@JsonSerializable()
-class Clouds {
-  @JsonKey(name: "all")
-  final int? all;
-
-  Clouds({
-    this.all,
-  });
-
-  Clouds copyWith({
-    int? all,
-  }) =>
-      Clouds(
-        all: all ?? this.all,
-      );
-
-  factory Clouds.fromJson(Map<String, dynamic> json) => _$CloudsFromJson(json);
-
-  Map<String, dynamic> toJson() => _$CloudsToJson(this);
-}
-
-@JsonSerializable()
-class Main {
-  @JsonKey(name: "temp")
-  final double? temp;
-  @JsonKey(name: "feels_like")
-  final double? feelsLike;
-  @JsonKey(name: "temp_min")
-  final double? tempMin;
-  @JsonKey(name: "temp_max")
-  final double? tempMax;
-  @JsonKey(name: "pressure")
-  final int? pressure;
-  @JsonKey(name: "humidity")
-  final int? humidity;
-
-  Main({
-    this.temp,
-    this.feelsLike,
-    this.tempMin,
-    this.tempMax,
-    this.pressure,
-    this.humidity,
-  });
-
-  Main copyWith({
-    double? temp,
-    double? feelsLike,
-    double? tempMin,
-    double? tempMax,
-    int? pressure,
-    int? humidity,
-  }) =>
-      Main(
-        temp: temp ?? this.temp,
-        feelsLike: feelsLike ?? this.feelsLike,
-        tempMin: tempMin ?? this.tempMin,
-        tempMax: tempMax ?? this.tempMax,
-        pressure: pressure ?? this.pressure,
-        humidity: humidity ?? this.humidity,
-      );
-
-  factory Main.fromJson(Map<String, dynamic> json) => _$MainFromJson(json);
-
-  Map<String, dynamic> toJson() => _$MainToJson(this);
-}
-
-@JsonSerializable()
-class Sys {
-  @JsonKey(name: "type")
-  final int? type;
-  @JsonKey(name: "id")
-  final int? id;
-  @JsonKey(name: "country")
-  final String? country;
-  @JsonKey(name: "sunrise")
-  final int? sunrise;
-  @JsonKey(name: "sunset")
-  final int? sunset;
-
-  Sys({
-    this.type,
-    this.id,
-    this.country,
-    this.sunrise,
-    this.sunset,
-  });
-
-  Sys copyWith({
-    int? type,
-    int? id,
-    String? country,
-    int? sunrise,
-    int? sunset,
-  }) =>
-      Sys(
-        type: type ?? this.type,
-        id: id ?? this.id,
-        country: country ?? this.country,
-        sunrise: sunrise ?? this.sunrise,
-        sunset: sunset ?? this.sunset,
-      );
-
-  factory Sys.fromJson(Map<String, dynamic> json) => _$SysFromJson(json);
-
-  Map<String, dynamic> toJson() => _$SysToJson(this);
-}
-
-@JsonSerializable()
-class Weather {
-  @JsonKey(name: "id")
-  final int? id;
-  @JsonKey(name: "main")
-  final String? main;
-  @JsonKey(name: "description")
-  final String? description;
-  @JsonKey(name: "icon")
-  final String? icon;
-
-  Weather({
-    this.id,
-    this.main,
-    this.description,
-    this.icon,
-  });
-
-  Weather copyWith({
-    int? id,
-    String? main,
-    String? description,
-    String? icon,
-  }) =>
-      Weather(
-        id: id ?? this.id,
-        main: main ?? this.main,
-        description: description ?? this.description,
-        icon: icon ?? this.icon,
-      );
-
-  factory Weather.fromJson(Map<String, dynamic> json) =>
-      _$WeatherFromJson(json);
-
-  Map<String, dynamic> toJson() => _$WeatherToJson(this);
-}
-
-@JsonSerializable()
-class Wind {
-  @JsonKey(name: "speed")
-  final double? speed;
-  @JsonKey(name: "deg")
-  final int? deg;
-
-  Wind({
-    this.speed,
-    this.deg,
-  });
-
-  Wind copyWith({
-    double? speed,
-    int? deg,
-  }) =>
-      Wind(
-        speed: speed ?? this.speed,
-        deg: deg ?? this.deg,
-      );
-
-  factory Wind.fromJson(Map<String, dynamic> json) => _$WindFromJson(json);
-
-  Map<String, dynamic> toJson() => _$WindToJson(this);
 }

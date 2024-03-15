@@ -1,8 +1,10 @@
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_mobx/flutter_mobx.dart';
-import 'package:weather_app/main_dev.dart';
+import 'package:weather_app/main.dart';
 import 'package:weather_app/modules/settings/settings_store.dart';
+import 'package:weather_app/values/app_colors.dart';
+import 'package:weather_app/values/enumeration.dart';
+import 'package:weather_app/values/strings.dart';
 
 class SettingsPage extends StatelessWidget {
   const SettingsPage({super.key});
@@ -11,11 +13,18 @@ class SettingsPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    const lightColorText = TextStyle(color: Color(0xfff7f3f0));
     const scaffoldColor = Color(0xff453b32);
+    Color containerColor = const Color(0xff261F14);
 
     return Scaffold(
       backgroundColor: scaffoldColor,
+      appBar: AppBar(
+        backgroundColor: containerColor,
+        title: Text(
+          AppStrings.appSettingsTxt,
+          style: AppColors.darkColorText.copyWith(fontSize: 20),
+        ),
+      ),
       body: SafeArea(
         child: Padding(
             padding: const EdgeInsets.all(20),
@@ -23,29 +32,11 @@ class SettingsPage extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Row(
-                  children: [
-                    IconButton(
-                      onPressed: () => Navigator.pop(context),
-                      icon: Icon(
-                        CupertinoIcons.chevron_back,
-                        color: lightColorText.color!,
-                        size: 20,
-                      ),
-                    ),
-                    const SizedBox(width: 10),
-                    Text(
-                      'App Settings',
-                      style: lightColorText.copyWith(fontSize: 30),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 40),
-                Row(
                   mainAxisAlignment: MainAxisAlignment.start,
                   children: [
                     const Expanded(
                       child: SettingTitle(
-                        title: 'Temperature Unit: ',
+                        title: AppStrings.temperatureUnitTxt,
                       ),
                     ),
                     const SizedBox(width: 20),
@@ -54,8 +45,10 @@ class SettingsPage extends StatelessWidget {
                         onSelected: store.setUnit,
                         entries: TemperatureUnit.values
                             .map(
-                              (e) =>
-                                  DropdownMenuEntry(value: e, label: e.display),
+                              (e) => DropdownMenuEntry(
+                                value: e,
+                                label: e.display,
+                              ),
                             )
                             .toList(),
                         value: store.unit,
@@ -69,7 +62,7 @@ class SettingsPage extends StatelessWidget {
                   children: [
                     const Expanded(
                       child: SettingTitle(
-                        title: 'Reload Frequency: ',
+                        title: AppStrings.reloadFrequency,
                       ),
                     ),
                     const SizedBox(width: 20),
@@ -129,9 +122,8 @@ class _DropDownMenu<T> extends StatelessWidget {
 
     const border = UnderlineInputBorder(
       borderSide: BorderSide(
-        width: 2,
         color: light,
-        style: BorderStyle.solid,
+        style: BorderStyle.none,
       ),
     );
 

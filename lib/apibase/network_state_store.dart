@@ -8,7 +8,7 @@ class NetworkStateStore = _NetworkStateStore with _$NetworkStateStore;
 
 abstract class _NetworkStateStore with Store {
   @observable
-  NetworkState state = NetworkState.loading;
+  NetworkState state = NetworkState.idle;
 
   @observable
   String? serverError;

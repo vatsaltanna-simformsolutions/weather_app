@@ -3,8 +3,6 @@ import 'package:retrofit/retrofit.dart';
 import 'package:weather_app/model/current_weather.dart';
 import 'package:weather_app/model/days_forecast.dart';
 import 'package:weather_app/model/locations.dart';
-import 'package:weather_app/model/model.dart';
-import 'package:weather_app/model/response/weather.dart';
 
 part 'api_service.g.dart';
 

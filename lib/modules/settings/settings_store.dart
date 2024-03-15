@@ -1,7 +1,9 @@
 import 'dart:async';
 
 import 'package:mobx/mobx.dart';
+import 'package:weather_app/services/data_store/sp_data_store.dart';
 import 'package:weather_app/utils/helpers/helpers.dart';
+import 'package:weather_app/values/enumeration.dart';
 
 import '../../apibase/network_state_store.dart';
 
@@ -11,11 +13,11 @@ class SettingsStore = _SettingsStore with _$SettingsStore;
 
 abstract class _SettingsStore extends NetworkStateStore with Store {
   _SettingsStore() {
-    _resetTimer();
+    _init();
   }
 
   Timer? _timer;
-  List<Function> _callbacks = [];
+  final _callbacks = <Function>[];
 
   @observable
   TemperatureUnit unit = TemperatureUnit.celsius;
@@ -23,12 +25,23 @@ abstract class _SettingsStore extends NetworkStateStore with Store {
   @observable
   ReloadFrequencies frequency = ReloadFrequencies.m10;
 
+  void _init() {
+    final freq = SPDataStore.store.getReloadFrequency();
+    final unit = SPDataStore.store.getTemperatureUnit();
+
+    setUnit(unit);
+    setFrequency(freq);
+  }
+
   void setUnit(TemperatureUnit? newUnit) {
     unit = newUnit ?? unit;
+    SPDataStore.store.setTemperatureUnit(unit);
   }
 
   void setFrequency(ReloadFrequencies? newFrequencies) {
     frequency = newFrequencies ?? frequency;
+    SPDataStore.store.setReloadFrequency(frequency);
+
     _resetTimer();
   }
 
@@ -67,27 +80,4 @@ abstract class _SettingsStore extends NetworkStateStore with Store {
       _callbacks.forEach(safeRun);
     });
   }
-}
-
-enum ReloadFrequencies {
-  m10(10, '10 minutes'),
-  m15(15, '15 minutes'),
-  m30(30, '30 minutes'),
-  m60(60, '1 hour');
-
-  const ReloadFrequencies(this.minutes, this.display);
-
-  final int minutes;
-  final String display;
-
-  Duration get duration => Duration(minutes: minutes);
-}
-
-enum TemperatureUnit {
-  kelvin('Kelvin'),
-  celsius('Celsius'),
-  fahrenheit('Fahrenheit');
-
-  final String display;
-  const TemperatureUnit(this.display);
 }
