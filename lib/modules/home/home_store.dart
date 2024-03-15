@@ -63,31 +63,43 @@ abstract class _HomeStore extends NetworkStateStore with Store {
   Coord currentPosition = Constants.defaultCoords;
 
   Future<void> init() async {
-    try {
-      final pos = (await _locator.getPosition())?.coord;
+    Coord? pos;
 
-      currentPosition = Coord(
-        lon: pos?.lon ?? currentPosition.lon,
-        lat: pos?.lat ?? currentPosition.lat,
-      );
+    try {
+      final lat = await _dataStore.retrieveStoredLat();
+      final lon = await _dataStore.retrieveStoredLong();
+
+      if (lat != null && lon != null) {
+        pos = Coord(
+          lon: lon,
+          lat: lat,
+        );
+      } else {
+        pos = (await _locator.getPosition())?.coord;
+      }
     } catch (e) {
       locationError = '$e';
     }
 
-    await getCurrentWeather();
-    await getDaysForecast();
+    _setCoords(Coord(
+      lon: pos?.lon ?? currentPosition.lon,
+      lat: pos?.lat ?? currentPosition.lat,
+    ));
   }
 
   void setLocation(Result result) {
     FocusScope.of(navigator.context).unfocus();
 
-    currentPosition = Coord(
+    _setCoords(Coord(
       lat: result.latitude,
       lon: result.longitude,
-    );
+    ));
+  }
+
+  void _setCoords(Coord coord) {
+    currentPosition = coord;
 
     getCurrentWeather();
-
     getDaysForecast();
   }
 
@@ -112,6 +124,7 @@ abstract class _HomeStore extends NetworkStateStore with Store {
           localCall: () {
             final data = SharedPrefs.getSharedProperty(
                 keyEnum: SharedPrefsKeys.getCurrentWeather);
+
             weather = CurrentWeather.fromJson(jsonDecode(data));
           });
     } catch (e) {
@@ -133,7 +146,11 @@ abstract class _HomeStore extends NetworkStateStore with Store {
             );
             state = NetworkState.success;
 
-            _dataStore.setDaysForecast(daysForecast);
+            try {
+              _dataStore.setDaysForecast(daysForecast);
+            } catch (e) {
+              debugPrint('$e');
+            }
           },
           localCall: () {
             daysForecast = _dataStore.getDaysForecast(currentPosition);
