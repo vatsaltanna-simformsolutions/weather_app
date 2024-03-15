@@ -1,5 +1,7 @@
 # weather_app
 
+[![Codacy Badge](https://api.codacy.com/project/badge/Grade/775cac1ff8994b129650bfe195d83dfd)](https://app.codacy.com/gh/vatsaltanna-simformsolutions/weather_app?utm_source=github.com&utm_medium=referral&utm_content=vatsaltanna-simformsolutions/weather_app&utm_campaign=Badge_Grade)
+
 A Flutter project for the Weather App.
 
 ## Getting Started
